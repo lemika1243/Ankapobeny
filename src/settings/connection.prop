@@ -1,0 +1,4 @@
+dbtype:postgres
+database:zoo
+user:zoo
+password:zoo
