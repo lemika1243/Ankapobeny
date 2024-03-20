@@ -146,176 +146,224 @@ public class MiDao {
         }
         query += ")";
         return query;
-    }
+        }
 
-    public <T> List<T> getAll(Class<T> temp) throws Exception {
-        List<T> valiny = new ArrayList<T>();
-        Statement stmt = connection.createStatement();
-        String query = "select * from " + temp.getSimpleName().toLowerCase();
-        ResultSet res = stmt.executeQuery(query);
-        T temporar = temp.newInstance();
-        while (res.next()) {
-            temporar = setFieldColumn(res, temp);
-            setForeignFieldColumn(res, temporar);
-            valiny.add(temporar);
-        }
-        return valiny;
-    }
 
-    public <T, K> T getById(K id, Class<T> temp) throws Exception {
-        Statement stmt = connection.createStatement();
-        Field primary = MiAuto.getFieldsAnnoted(temp, Primary.class).get(0);
-        String query = "select * from " + temp.getSimpleName().toLowerCase() + " where "
-                + primary.getAnnotation(Column.class).name() + "='" + id + "'";
-        ResultSet res = stmt.executeQuery(query);
-        while (res.next()) {
-            return setFieldColumn(res, temp);
-        }
-        return null;
-    }
 
-    public <T> List<T> find(Class<T> temp, String condition) throws Exception {
-        List<T> valiny = new ArrayList<T>();
-        Statement stmt = connection.createStatement();
-        String query = "select * from " + temp.getSimpleName().toLowerCase() + " where " + condition;
-        ResultSet res = stmt.executeQuery(query);
-        List<Field> fields = MiAuto.getFieldsAnnoted(temp, Column.class);
-        T temporar = temp.newInstance();
-        while (res.next()) {
-            temporar = setFieldColumn(res, temp);
-            valiny.add(temporar);
-        }
-        return valiny;
-    }
 
-    public <T> List<T> findIn(Class<T> temp, String condition) throws Exception {
-        List<T> valiny = new ArrayList<T>();
-        Statement stmt = connection.createStatement();
-        String query = "select * from " + temp.getSimpleName().toLowerCase() + " " + condition;
-        ResultSet res = stmt.executeQuery(query);
-        List<Field> fields = MiAuto.getFieldsAnnoted(temp, Column.class);
-        T temporar = temp.newInstance();
-        while (res.next()) {
-            temporar = setFieldColumn(res, temp);
-            setForeignFieldColumn(res, temporar);
-            valiny.add(temporar);
-        }
-        return valiny;
-    }
 
-    public <T> String insert(T temporar) throws Exception {
-        Class temp = temporar.getClass();
-        Statement stmt = connection.createStatement();
-        Field[] fields = temporar.getClass().getDeclaredFields();
-        String query = "insert into " + temp.getSimpleName() + " " + getQueryForInsertColumn(fields) + " values(";
-        for (int i = 0; i < fields.length; i++) {
-            Field field = fields[i];
-            query += getQuery(temporar, field, true);
-            if (i < fields.length - 1)
-                query += ",";
-        }
-        query += ")";
-        stmt.executeUpdate(query);
-        try {
-            connection.commit();
-        } catch (Exception e) {
-        }
-        return query;
-    }
-
-    public <T> void update(T temporar, String condition) throws Exception {
-        Class temp = temporar.getClass();
-        Statement stmt = connection.createStatement();
-        String query = "update " + temp.getSimpleName() + " set";
-        Field[] fields = temporar.getClass().getDeclaredFields();
-        for (int i = 0; i < fields.length; i++) {
-            Field field = fields[i];
-            query += getQuery(temporar, field, false);
-            if (i < fields.length - 1)
-                query += ",";
-        }
-        if (!condition.equals(""))
-            query += " where " + condition;
-        stmt.executeUpdate(query);
-        try {
-            connection.commit();
-        } catch (Exception e) {
-        }
-    }
-
-    public <T> void update(T temporar) throws Exception {
-        Class temp = temporar.getClass();
-        Statement stmt = connection.createStatement();
-        String query = "update " + temp.getSimpleName() + " set ";
-        Field[] fields = temporar.getClass().getDeclaredFields();
-        String column = new String(), foreign = new String();
-        Method get;
-        Object fk;
-        Field primary;
-        for (int i = 0; i < fields.length; i++) {
-            Field field = fields[i];
-            query += getQuery(temporar, field, false);
-            if (i < fields.length - 1)
-                query += ",";
-        }
-        List<Field> primaries = MiAuto.getFieldsAnnoted(temp, Primary.class);
-        primary = primaries.get(0);
-        get = temp.getMethod("get" + MiAuto.toRenisoratra(primary.getName(), 0));
-        query += " where " + primary.getAnnotation(Column.class).name() + "="
-                + getParseInsert(get.invoke(temporar)).get(primary.getType());
-        stmt.executeUpdate(query);
-        try {
-            connection.close();
-            connection.commit();
-        } catch (Exception e) {
-        }
-    }
-
-    public String nextVal(String sequenceName) throws Exception {
-        String valiny = new String();
-        Statement stmt = connection.createStatement();
-        HashMap<String, String> map = getDbSequenceMethod(sequenceName);
-        ResultSet res = stmt.executeQuery("select " + map.get(Connect.getDbType()));
-        if (res.next())
-            valiny = res.getString("nextval");
-        return valiny;
-    }
-
-    public List<String[]> getValues(String query, String... col) throws Exception {
-        List<String[]> valiny = new ArrayList<String[]>();
-        ResultSet res = connection.createStatement().executeQuery(query);
-        while (res.next()) {
-            String[] val = new String[col.length];
-            for (int i = 0; i < val.length; i++) {
-                val[i] = res.getString(col[i]);
+    /// SELECTING
+        
+        public <T> List<T> getAll(Class<T> temp) throws Exception {
+            List<T> valiny = new ArrayList<T>();
+            Statement stmt = connection.createStatement();
+            String query = "select * from " + temp.getSimpleName().toLowerCase();
+            ResultSet res = stmt.executeQuery(query);
+            T temporar = temp.newInstance();
+            while (res.next()) {
+                temporar = setFieldColumn(res, temp);
+                setForeignFieldColumn(res, temporar);
+                valiny.add(temporar);
             }
-            valiny.add(val);
+            return valiny;
         }
-        return valiny;
-    }
 
-    public <T> void delete(T temporar) throws Exception {
-        String valiny = new String();
-        Class temp = temporar.getClass();
-        Statement stmt = connection.createStatement();
-        Field prim = (Field) MiAuto.getFieldsAnnoted(temp, Primary.class).get(0);
-        Method get = temp.getMethod("get" + MiAuto.toRenisoratra(prim.getName(), 0));
-        String primary = prim.getAnnotation(Column.class).name();
-        String query = "delete from " + temp.getSimpleName() + " where " + primary + "="
-                + getParseInsert(get.invoke(temporar)).get(prim.getType()) + "";
-        stmt.executeUpdate(query);
-        try {
-            connection.commit();
-        } catch (Exception e) {
+        public <T, K> T getById(K id, Class<T> temp) throws Exception {
+            Statement stmt = connection.createStatement();
+            Field primary = MiAuto.getFieldsAnnoted(temp, Primary.class).get(0);
+            String query = "select * from " + temp.getSimpleName().toLowerCase() + " where "
+                    + primary.getAnnotation(Column.class).name() + "='" + id + "'";
+            ResultSet res = stmt.executeQuery(query);
+            while (res.next()) {
+                return setFieldColumn(res, temp);
+            }
+            return null;
         }
-    }
 
-    public <T> void delete(List<T> objs) throws Exception {
-        for (T t : objs) {
-            delete(t);
+        /**
+         * returns all the object in the database that correspond to the condition and the query
+        * <p>
+        * <strong>
+        * DANGER !!!!!
+        * </strong>
+        * : This method must have a condition.
+        * </p>
+         * @param <T> type of the objects to return
+         * @param condition condition in String
+         * @return the list of the object associated to the base
+         * @throws Exception
+         */
+        public <T> List<T> find(Class<T> temp, String condition) throws Exception {
+            List<T> valiny = new ArrayList<T>();
+            Statement stmt = connection.createStatement();
+            String query = "select * from " + temp.getSimpleName().toLowerCase() + " where " + condition;
+            ResultSet res = stmt.executeQuery(query);
+            List<Field> fields = MiAuto.getFieldsAnnoted(temp, Column.class);
+            T temporar = temp.newInstance();
+            while (res.next()) {
+                temporar = setFieldColumn(res, temp);
+                valiny.add(temporar);
+            }
+            return valiny;
         }
-    }
 
+        /**
+         * like find() but does not necessarily need a condition
+         */
+        public <T> List<T> findIn(Class<T> temp, String condition) throws Exception {
+            List<T> valiny = new ArrayList<T>();
+            Statement stmt = connection.createStatement();
+            String query = "select * from " + temp.getSimpleName().toLowerCase() + " " + condition;
+            ResultSet res = stmt.executeQuery(query);
+            List<Field> fields = MiAuto.getFieldsAnnoted(temp, Column.class);
+            T temporar = temp.newInstance();
+            while (res.next()) {
+                temporar = setFieldColumn(res, temp);
+                setForeignFieldColumn(res, temporar);
+                valiny.add(temporar);
+            }
+            return valiny;
+        }
+    /// END
+
+
+
+
+    /// INSERTING
+        public <T> String insert(T temporar) throws Exception {
+            Class temp = temporar.getClass();
+            Statement stmt = connection.createStatement();
+            Field[] fields = temporar.getClass().getDeclaredFields();
+            String query = "insert into " + temp.getSimpleName() + " " + getQueryForInsertColumn(fields) + " values(";
+            for (int i = 0; i < fields.length; i++) {
+                Field field = fields[i];
+                query += getQuery(temporar, field, true);
+                if (i < fields.length - 1)
+                    query += ",";
+            }
+            query += ")";
+            stmt.executeUpdate(query);
+            try {
+                connection.commit();
+            } catch (Exception e) {
+            }
+            return query;
+        }
+    /// END
+
+
+
+
+
+
+    /// UPDATING
+
+        public <T> void update(T temporar, String condition) throws Exception {
+            Class temp = temporar.getClass();
+            Statement stmt = connection.createStatement();
+            String query = "update " + temp.getSimpleName() + " set";
+            Field[] fields = temporar.getClass().getDeclaredFields();
+            for (int i = 0; i < fields.length; i++) {
+                Field field = fields[i];
+                query += getQuery(temporar, field, false);
+                if (i < fields.length - 1)
+                    query += ",";
+            }
+            if (!condition.equals(""))
+                query += " where " + condition;
+            stmt.executeUpdate(query);
+            try {
+                connection.commit();
+            } catch (Exception e) {
+            }
+        }
+
+
+        public <T> void update(T temporar) throws Exception {
+            Class temp = temporar.getClass();
+            Statement stmt = connection.createStatement();
+            String query = "update " + temp.getSimpleName() + " set ";
+            Field[] fields = temporar.getClass().getDeclaredFields();
+            String column = new String(), foreign = new String();
+            Method get;
+            Object fk;
+            Field primary;
+            for (int i = 0; i < fields.length; i++) {
+                Field field = fields[i];
+                query += getQuery(temporar, field, false);
+                if (i < fields.length - 1)
+                    query += ",";
+            }
+            List<Field> primaries = MiAuto.getFieldsAnnoted(temp, Primary.class);
+            primary = primaries.get(0);
+            get = temp.getMethod("get" + MiAuto.toRenisoratra(primary.getName(), 0));
+            query += " where " + primary.getAnnotation(Column.class).name() + "="
+                    + getParseInsert(get.invoke(temporar)).get(primary.getType());
+            stmt.executeUpdate(query);
+            try {
+                connection.close();
+                connection.commit();
+            } catch (Exception e) {
+            }
+        }
+    /// END
+
+
+
+
+
+
+    /// DELETING
+        public <T> void delete(T temporar) throws Exception {
+            String valiny = new String();
+            Class temp = temporar.getClass();
+            Statement stmt = connection.createStatement();
+            Field prim = (Field) MiAuto.getFieldsAnnoted(temp, Primary.class).get(0);
+            Method get = temp.getMethod("get" + MiAuto.toRenisoratra(prim.getName(), 0));
+            String primary = prim.getAnnotation(Column.class).name();
+            String query = "delete from " + temp.getSimpleName() + " where " + primary + "="
+                    + getParseInsert(get.invoke(temporar)).get(prim.getType()) + "";
+            stmt.executeUpdate(query);
+            try {
+                connection.commit();
+            } catch (Exception e) {
+            }
+        }
+
+
+        public <T> void delete(List<T> objs) throws Exception {
+            for (T t : objs) {
+                delete(t);
+            }
+        }
+    /// END
+
+
+
+
+    /// SEQUENCE
+        /**
+         * get the next value of a sequence
+         * @return the value in String of the sequence next value
+         * @throws Exception
+         */
+        public String nextVal(String sequenceName) throws Exception {
+            String valiny = new String();
+            Statement stmt = connection.createStatement();
+            HashMap<String, String> map = getDbSequenceMethod(sequenceName);
+            ResultSet res = stmt.executeQuery("select " + map.get(Connect.getDbType()));
+            if (res.next())
+                valiny = res.getString("nextval");
+            return valiny;
+        }
+    /// END
+
+
+
+
+    /**
+     * Close the connection
+     */
     public void closeConnection() throws Exception{
         if(connection == null) connection.close();
     }
