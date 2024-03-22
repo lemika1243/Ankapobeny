@@ -301,7 +301,6 @@ public class MiDao {
                     + getParseInsert(get.invoke(temporar)).get(primary.getType());
             stmt.executeUpdate(query);
             try {
-                connection.close();
                 connection.commit();
             } catch (Exception e) {
             }
