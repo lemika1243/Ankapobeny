@@ -1,4 +1,4 @@
 dbtype:postgres
-database:zoo
-user:zoo
-password:zoo
+database:restaurant
+user:postgres
+password:20005100
