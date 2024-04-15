@@ -50,7 +50,6 @@ public class MiDao {
             Method set = temporar.getClass().getMethod("set" + MiAuto.toRenisoratra(field.getName(), 0), field.getType());
             set.invoke(temporar, getById(id, field.getType()));
         }
-        return;
     }
 
     HashMap<Class, Method> parsing(ResultSet res) throws Exception {
@@ -196,17 +195,27 @@ public class MiDao {
 
 
     /// SELECTING
-        
+
         public <T> List<T> getAll(Class<T> temp) throws Exception {
+            List<T> valiny = getAll(temp, null, 10, 2);
+            return valiny;
+        }
+        
+        public <T> List<T> getAll(Class<T> temp, List<T> objects, int begin, int max) throws Exception {
             List<T> valiny = new ArrayList<T>();
-            Statement stmt = connection.createStatement();
-            String query = "select * from " + temp.getSimpleName().toLowerCase();
-            ResultSet res = stmt.executeQuery(query);
-            T temporar = temp.newInstance();
-            while (res.next()) {
-                temporar = setFieldColumn(res, temp);
-                setForeignFieldColumn(res, temporar);
-                valiny.add(temporar);
+            if(objects == null){
+                Statement stmt = connection.createStatement();
+                String query = "select * from " + temp.getSimpleName().toLowerCase();
+                ResultSet res = stmt.executeQuery(query);
+                T temporar = temp.newInstance();
+                while (res.next()) {
+                    temporar = setFieldColumn(res, temp);
+                    setForeignFieldColumn(res, temporar);
+                    valiny.add(temporar);
+                }
+            }
+            else{
+                valiny = objects.subList(begin, begin+max);
             }
             return valiny;
         }
@@ -237,6 +246,8 @@ public class MiDao {
          * @throws Exception
          */
         public <T> List<T> find(Class<T> temp, String condition) throws Exception {
+            if(condition==null || condition.equals(""))
+                throw new Exception("Must have a condition");
             List<T> valiny = new ArrayList<T>();
             Statement stmt = connection.createStatement();
             String query = "select * from " + temp.getSimpleName().toLowerCase() + " where " + condition;
@@ -294,31 +305,6 @@ public class MiDao {
                 valiny.add(temporar);
             }
             return valiny;
-        }
-    /// END
-
-
-
-
-    /// INSERTING
-        public <T> String insert(T temporar) throws Exception {
-            Class temp = temporar.getClass();
-            Statement stmt = connection.createStatement();
-            Field[] fields = temporar.getClass().getDeclaredFields();
-            String query = "insert into " + temp.getSimpleName() + " " + getQueryForInsertColumn(fields) + " values(";
-            for (int i = 0; i < fields.length; i++) {
-                Field field = fields[i];
-                query += getQuery(temporar, field, true);
-                if (i < fields.length - 1)
-                    query += ",";
-            }
-            query += ")";
-            stmt.executeUpdate(query);
-            try {
-                connection.commit();
-            } catch (Exception e) {
-            }
-            return query;
         }
     /// END
 
@@ -435,7 +421,7 @@ public class MiDao {
      * Close the connection
      */
     public void closeConnection() throws Exception{
-        if(connection == null) connection.close();
+        if(connection != null) connection.close();
     }
 
 }
