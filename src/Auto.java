@@ -8,8 +8,6 @@ import java.time.LocalDate;
 import java.util.*;
 import javax.swing.*;
 
-import annotation.Column;
-
 public class Auto {
     Object object;
     String[] objectForm;
@@ -133,6 +131,33 @@ public class Auto {
 
 
     /// CONCERNING FILES
+
+        public static void createFolder(String path) {
+            File folder = new File(path);
+            if (!folder.exists()) {
+                folder.mkdirs();
+            }
+        }
+
+        public static void createFolders(String filename) {
+            File file = new File(filename);
+            String[] folder = filename.split("/");
+            for (int i = 0; i < folder.length - 1; i++) {
+                createFolder(folder[i]);
+            }
+        }
+
+        public static void createFolders(String mom, String filename) {
+            File file = new File(filename);
+            String[] folder = filename.split("/");
+            String flds = mom;
+            for (int i = 0; i < folder.length - 1; i++) {
+                flds += "/" + folder[i];
+            }
+            Auto.createFolder(flds);
+        }
+
+
         /**
          * get all the containing of file in String
          * @param file the file
@@ -189,7 +214,7 @@ public class Auto {
          * @param nameIn the string to look for in the file
          * @return
          */
-        public List<String> grep(String path, String nameIn){
+        public static List<String> grep(String path, String nameIn){
             List<String> valiny = new ArrayList<>();
             valiny = getIn(getAllIn(path), nameIn);
             return valiny;
@@ -654,7 +679,7 @@ public class Auto {
             for (int i = 0; i < count; i++) {
                 try {
                     element = container.substring(i, i + value.length());
-                    if (element.equals(value)) {
+                    if (element.toLowerCase().equals(value.toLowerCase())) {
                         return container;
                     }
                 } catch (Exception e) {
