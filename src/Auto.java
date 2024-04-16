@@ -154,14 +154,30 @@ public class Auto {
 
         /**
          * save the Strings in the file
-         * @param fileName
-         * @param files
+         * @param fileName the path of the file
+         * @param files the values of the file to add on
          */
         public void saveData(String fileName, String... files) {
             try {
                 BufferedWriter w = new BufferedWriter(new FileWriter(fileName));
                 for (int i = 0; i < files.length; i++) {
                     w.write(files[i] + "\n");
+                }
+                w.close();
+            } catch (Exception e) {
+            }
+        }
+
+        /**
+         * save the Strings in the file
+         * @param fileName the path of the file
+         * @param files the values of the file to add on
+         */
+        public void writeIn(String fileName, List<String> values) {
+            try {
+                BufferedWriter w = new BufferedWriter(new FileWriter(fileName));
+                for (String string : values) {
+                    w.write(string + "\n");
                 }
                 w.close();
             } catch (Exception e) {
