@@ -41,8 +41,8 @@ public class Connect {
 
     public static String getDbType() throws Exception{
         String valiny = new String();
-        String[] dbtype = Auto.getIn(prop, "dbtype").split(":");
         try {
+            String[] dbtype = Auto.getIn(prop, "dbtype").get(0).split(":");
             valiny=dbtype[1];
         } catch (Exception e) {
             // TODO: handle exception
@@ -52,8 +52,8 @@ public class Connect {
 
     static String getDbName() throws Exception{
         String valiny = new String();
-        String[] dbtype = Auto.getIn(prop, "database").split(":");
         try {
+            String[] dbtype = Auto.getIn(prop, "database").get(0).split(":");
             valiny=dbtype[1];
         } catch (Exception e) {
             throw new Exception("There must be a database name");
@@ -63,8 +63,8 @@ public class Connect {
 
     static String getUser() throws Exception{
         String valiny = new String();
-        String[] dbtype = Auto.getIn(prop, "user").split(":");
         try {
+            String[] dbtype = Auto.getIn(prop, "user").get(0).split(":");
             valiny=dbtype[1];
         } catch (Exception e) {
         }
@@ -73,8 +73,8 @@ public class Connect {
 
     static String getPassword() throws Exception{
         String valiny = new String();
-        String[] dbtype = Auto.getIn(prop, "password").split(":");
         try {
+            String[] dbtype = Auto.getIn(prop, "password").get(0).split(":");
             valiny=dbtype[1];
         } catch (Exception e) {
             // TODO: handle exception

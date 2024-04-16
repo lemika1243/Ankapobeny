@@ -91,7 +91,7 @@ public class Auto {
 
 
     
-    /// DATE OPERATION
+    /// OPERATIONS FOR DATES
 
         /**
          * transform a Date into String
@@ -133,6 +133,31 @@ public class Auto {
 
 
     /// CONCERNING FILES
+        public static void createFolder(String path) {
+            File folder = new File(path);
+            if (!folder.exists()) {
+                folder.mkdirs();
+            }
+        }
+
+        public static void createFolders(String filename) {
+            File file = new File(filename);
+            String[] folder = filename.split("/");
+            for (int i = 0; i < folder.length - 1; i++) {
+                createFolder(folder[i]);
+            }
+        }
+
+        public static void createFolders(String mom, String filename) {
+            File file = new File(filename);
+            String[] folder = filename.split("/");
+            String flds = mom;
+            for (int i = 0; i < folder.length - 1; i++) {
+                flds += "/" + folder[i];
+            }
+            Auto.createFolder(flds);
+        }
+
         /**
          * get all the containing of file in String
          * @param file the file
@@ -154,8 +179,8 @@ public class Auto {
 
         /**
          * save the Strings in the file
-         * @param fileName
-         * @param files
+         * @param fileName the path of the file
+         * @param files the values of the file to add on
          */
         public void saveData(String fileName, String... files) {
             try {
@@ -167,9 +192,34 @@ public class Auto {
             } catch (Exception e) {
             }
         }
-        // END
 
+        /**
+         * save the Strings in the file
+         * @param fileName the path of the file
+         * @param files the values of the file to add on
+         */
+        public void writeIn(String fileName, List<String> values) {
+            try {
+                BufferedWriter w = new BufferedWriter(new FileWriter(fileName));
+                for (String string : values) {
+                    w.write(string + "\n");
+                }
+                w.close();
+            } catch (Exception e) {
+            }
+        }
         
+        /**
+         * @param path the file path
+         * @param nameIn the string to look for in the file
+         * @return
+         */
+        public static List<String> grep(String path, String nameIn){
+            List<String> valiny = new ArrayList<>();
+            valiny = getIn(getAllIn(path), nameIn);
+            return valiny;
+        }
+
     /// END
 
 
@@ -178,8 +228,7 @@ public class Auto {
 
 
 
-    /// CONCERNING HTML
-
+    /// CONCERNING HTMLS
         /**
          * GENERATE THE BEGINING OF THE DOCTYPE in html
          * @param title 
@@ -452,7 +501,7 @@ public class Auto {
 
 
 
-    /// UTIL FUNCTION
+    /// UTIL FUNCTIONS
 
         /**
          * MAKE UPPERCASE IN AN EXACT INDICE OF A STRING
@@ -617,8 +666,9 @@ public class Auto {
 
 
 
+    /// CONCERNING STRINGS
     /// CONCERNING STRING
-    
+
         public static String isIn(String container, String value) throws Exception {
             int count = container.length();
             String valiny = new String("");
@@ -626,7 +676,7 @@ public class Auto {
             for (int i = 0; i < count; i++) {
                 try {
                     element = container.substring(i, i + value.length());
-                    if (element.equals(value)) {
+                    if (element.toLowerCase().equals(value.toLowerCase())) {
                         return container;
                     }
                 } catch (Exception e) {
@@ -636,18 +686,19 @@ public class Auto {
             return valiny;
         }
 
-        public static String getIn(ArrayList<String> container, String value) {
+        public static List<String> getIn(ArrayList<String> container, String value) {
+            List<String> valiny = new ArrayList<>();
             String in = new String("");
             for (String string : container) {
                 try {
                     in = isIn(string, value);
                     if (!in.equals(""))
-                        return in;
+                        valiny.add(in);
                 } catch (Exception e) {
                     System.out.println(e.getMessage());
                 }
             }
-            return in;
+            return valiny;
         }
     /// END
 
@@ -657,7 +708,6 @@ public class Auto {
 
 
     /// CONCERNING ANNOTATION IN JAVA
-
         /**
          * get all the fields containing a specific annotation
          * @param <T> the generic class of the object containing the fields to verify
