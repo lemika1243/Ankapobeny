@@ -8,6 +8,8 @@ import java.time.LocalDate;
 import java.util.*;
 import javax.swing.*;
 
+import annotation.Column;
+
 public class Auto {
     Object object;
     String[] objectForm;
@@ -131,7 +133,6 @@ public class Auto {
 
 
     /// CONCERNING FILES
-
         public static void createFolder(String path) {
             File folder = new File(path);
             if (!folder.exists()) {
@@ -156,7 +157,6 @@ public class Auto {
             }
             Auto.createFolder(flds);
         }
-
 
         /**
          * get all the containing of file in String
@@ -220,9 +220,6 @@ public class Auto {
             return valiny;
         }
 
-        // END
-
-        
     /// END
 
 
@@ -232,7 +229,6 @@ public class Auto {
 
 
     /// CONCERNING HTMLS
-
         /**
          * GENERATE THE BEGINING OF THE DOCTYPE in html
          * @param title 
@@ -671,7 +667,8 @@ public class Auto {
 
 
     /// CONCERNING STRINGS
-    
+    /// CONCERNING STRING
+
         public static String isIn(String container, String value) throws Exception {
             int count = container.length();
             String valiny = new String("");
