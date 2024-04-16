@@ -30,7 +30,6 @@ public class MiDao {
     }
 
 
-
     <T> T setFieldColumn(ResultSet res, Class<T> temp) throws Exception {
         List<Field> fields = MiAuto.getFieldsAnnoted(temp, Column.class);
         T temporar = temp.newInstance();
@@ -90,6 +89,49 @@ public class MiDao {
         if (value.getSimpleName().equals("LocalDate"))
             return (T) LocalDate.parse((String) valiny);
         return (T) valiny;
+    }
+
+    <T> String getQueryConditions(T temporar, Field field, boolean printNull) throws Exception {
+        String query = "";
+        Class temp = temporar.getClass();
+        String column = new String(), foreign = new String();
+        Method get;
+        Object fk;
+        try {
+            foreign = field.getAnnotation(Foreign.class).name();
+            get = temp.getMethod("get" + MiAuto.toRenisoratra(field.getName(), 0));
+            fk = get.invoke(temporar);
+            Field primary = MiAuto.getFieldsAnnoted(fk.getClass(), Primary.class).get(0);
+            Method getForeign = fk.getClass().getMethod("get" + MiAuto.toRenisoratra(primary.getName(), 0));
+            Object o = getForeign.invoke(fk);
+            if (printNull)
+                query += " " + field.getAnnotation(Foreign.class).name() + "="
+                        + getParseInsert(o).get(primary.getType());
+            else{
+                if(o != null || !o.equals("null"))
+                    query += " " + field.getAnnotation(Foreign.class).name() + "="
+                            + getParseInsert(o).get(primary.getType());
+            }
+        } catch (Exception e) {
+            try {
+                column = field.getAnnotation(Column.class).name();
+                get = temp.getMethod("get" + MiAuto.toRenisoratra(field.getName(), 0));
+                Object geto = get.invoke(temporar);
+                if (printNull)
+                    query += " " + field.getAnnotation(Column.class).name() + "="
+                            + getParseInsert(geto).get(field.getType());
+                else{
+                    if(geto != null || !geto.equals("null")){
+                        query += " " + field.getAnnotation(Column.class).name() + "="
+                                + getParseInsert(geto).get(field.getType());
+                    }
+                }
+            } catch (Exception ex) {
+                if (printNull)
+                    query += "null";
+            }
+        }
+        return query;
     }
 
     <T> String getQuery(T temporar, Field field, boolean printNull) throws Exception {
@@ -153,17 +195,27 @@ public class MiDao {
 
 
     /// SELECTING
-        
+
         public <T> List<T> getAll(Class<T> temp) throws Exception {
+            List<T> valiny = getAll(temp, null, 10, 2);
+            return valiny;
+        }
+        
+        public <T> List<T> getAll(Class<T> temp, List<T> objects, int begin, int max) throws Exception {
             List<T> valiny = new ArrayList<T>();
-            Statement stmt = connection.createStatement();
-            String query = "select * from " + temp.getSimpleName().toLowerCase();
-            ResultSet res = stmt.executeQuery(query);
-            T temporar = temp.newInstance();
-            while (res.next()) {
-                temporar = setFieldColumn(res, temp);
-                setForeignFieldColumn(res, temporar);
-                valiny.add(temporar);
+            if(objects == null){
+                Statement stmt = connection.createStatement();
+                String query = "select * from " + temp.getSimpleName().toLowerCase();
+                ResultSet res = stmt.executeQuery(query);
+                T temporar = temp.newInstance();
+                while (res.next()) {
+                    temporar = setFieldColumn(res, temp);
+                    setForeignFieldColumn(res, temporar);
+                    valiny.add(temporar);
+                }
+            }
+            else{
+                valiny = objects.subList(begin, begin+max);
             }
             return valiny;
         }
@@ -194,6 +246,8 @@ public class MiDao {
          * @throws Exception
          */
         public <T> List<T> find(Class<T> temp, String condition) throws Exception {
+            if(condition==null || condition.equals(""))
+                throw new Exception("Must have a condition");
             List<T> valiny = new ArrayList<T>();
             Statement stmt = connection.createStatement();
             String query = "select * from " + temp.getSimpleName().toLowerCase() + " where " + condition;
@@ -204,6 +258,34 @@ public class MiDao {
                 temporar = setFieldColumn(res, temp);
                 valiny.add(temporar);
             }
+            return valiny;
+        }
+        
+        /**
+         * @return all the possibilities values in condition of T(The object to verify)
+         */
+        public <T> List<T> findAllWithCriteria(T temporar, Class<T> clazz) throws Exception{
+            String conditions = "";
+            List<T> valiny = new ArrayList<>();
+            Statement stmt = connection.createStatement();
+            String temp = "";
+            int mpanisa = 0;
+            for (Field field : clazz.getDeclaredFields()) {
+                String mety = getQueryConditions(temporar, field, false);
+                if(mpanisa > 0 && !mety.equals(""))
+                    temp+=" and";
+                temp+=mety;
+                mpanisa++;
+            }
+            if(!temp.equals("")) conditions+=" where"+temp;
+            String query = "select * from " + clazz.getSimpleName().toLowerCase() + conditions;
+            ResultSet res = stmt.executeQuery(query);
+            T mety = (T) clazz.newInstance();
+            while (res.next()) {
+                mety = setFieldColumn(res, clazz);
+                valiny.add(mety);
+            }
+            System.out.println(query);
             return valiny;
         }
 
@@ -223,31 +305,6 @@ public class MiDao {
                 valiny.add(temporar);
             }
             return valiny;
-        }
-    /// END
-
-
-
-
-    /// INSERTING
-        public <T> String insert(T temporar) throws Exception {
-            Class temp = temporar.getClass();
-            Statement stmt = connection.createStatement();
-            Field[] fields = temporar.getClass().getDeclaredFields();
-            String query = "insert into " + temp.getSimpleName() + " " + getQueryForInsertColumn(fields) + " values(";
-            for (int i = 0; i < fields.length; i++) {
-                Field field = fields[i];
-                query += getQuery(temporar, field, true);
-                if (i < fields.length - 1)
-                    query += ",";
-            }
-            query += ")";
-            stmt.executeUpdate(query);
-            try {
-                connection.commit();
-            } catch (Exception e) {
-            }
-            return query;
         }
     /// END
 
@@ -364,7 +421,7 @@ public class MiDao {
      * Close the connection
      */
     public void closeConnection() throws Exception{
-        if(connection == null) connection.close();
+        if(connection != null) connection.close();
     }
 
 }

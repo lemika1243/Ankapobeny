@@ -91,7 +91,7 @@ public class Auto {
 
 
     
-    /// DATE OPERATION
+    /// OPERATIONS FOR DATES
 
         /**
          * transform a Date into String
@@ -167,6 +167,18 @@ public class Auto {
             } catch (Exception e) {
             }
         }
+        
+        /**
+         * @param path the file path
+         * @param nameIn the string to look for in the file
+         * @return
+         */
+        public List<String> grep(String path, String nameIn){
+            List<String> valiny = new ArrayList<>();
+            valiny = getIn(getAllIn(path), nameIn);
+            return valiny;
+        }
+
         // END
 
         
@@ -178,7 +190,7 @@ public class Auto {
 
 
 
-    /// CONCERNING HTML
+    /// CONCERNING HTMLS
 
         /**
          * GENERATE THE BEGINING OF THE DOCTYPE in html
@@ -452,7 +464,7 @@ public class Auto {
 
 
 
-    /// UTIL FUNCTION
+    /// UTIL FUNCTIONS
 
         /**
          * MAKE UPPERCASE IN AN EXACT INDICE OF A STRING
@@ -617,7 +629,7 @@ public class Auto {
 
 
 
-    /// CONCERNING STRING
+    /// CONCERNING STRINGS
     
         public static String isIn(String container, String value) throws Exception {
             int count = container.length();
@@ -636,18 +648,19 @@ public class Auto {
             return valiny;
         }
 
-        public static String getIn(ArrayList<String> container, String value) {
+        public static List<String> getIn(ArrayList<String> container, String value) {
+            List<String> valiny = new ArrayList<>();
             String in = new String("");
             for (String string : container) {
                 try {
                     in = isIn(string, value);
                     if (!in.equals(""))
-                        return in;
+                        valiny.add(in);
                 } catch (Exception e) {
                     System.out.println(e.getMessage());
                 }
             }
-            return in;
+            return valiny;
         }
     /// END
 
@@ -657,7 +670,6 @@ public class Auto {
 
 
     /// CONCERNING ANNOTATION IN JAVA
-
         /**
          * get all the fields containing a specific annotation
          * @param <T> the generic class of the object containing the fields to verify
