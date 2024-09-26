@@ -16,5 +16,6 @@ for /r %%F in (*.java) do (
 
 
 javac -cp ../%lib%* -g:vars -d ../%bin% ../%temp_src%/*.java
-
-cd ../
+cd ../bin
+jar cvf ../ankapobeny.jar .
+cd ..
