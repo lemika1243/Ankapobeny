@@ -80,7 +80,7 @@ public class MiDao {
 
     HashMap<String, String> getDbSequenceMethod(String seqName) {
         HashMap<String, String> valiny = new HashMap<String, String>();
-        valiny.put("oracle", "" + seqName + ".nextval");
+        valiny.put("oracle", "" + seqName + ".nextval from dual");
         valiny.put("postgres", "nextval('" + seqName + "')");
         return valiny;
     }
@@ -316,6 +316,57 @@ public class MiDao {
         return valiny;
     }
     /// END
+    
+    /// INSERT
+    public <T> void insert(T object) throws Exception {
+        Class<?> clazz = object.getClass();
+        StringBuilder sql = new StringBuilder("INSERT INTO " + clazz.getSimpleName() + " (");
+        StringBuilder values = new StringBuilder(" VALUES (");
+
+        Field[] fields = clazz.getDeclaredFields();
+        for (Field field : fields) {
+            field.setAccessible(true);
+
+            // Check for @Column annotation
+            if (field.isAnnotationPresent(Column.class)) {
+                Column column = field.getAnnotation(Column.class);
+                sql.append(column.name()).append(", ");
+                values.append("?, "); // Placeholder for PreparedStatement
+            }
+
+            // Check for @Foreign annotation
+            if (field.isAnnotationPresent(Foreign.class)) {
+                Foreign foreign = field.getAnnotation(Foreign.class);
+                Object foreignObject = field.get(object);
+                if (foreignObject != null) {
+                    // Assuming foreign object has a method to get the ID
+                    Method getIdMethod = foreignObject.getClass().getMethod("getId");
+                    Object foreignId = getIdMethod.invoke(foreignObject);
+                    sql.append(foreign.name()).append(", ");
+                    values.append(foreignId).append(", "); // Directly add foreign ID to values
+                }
+            }
+        }
+
+        // Remove trailing comma and space
+        sql.setLength(sql.length() - 2);
+        values.setLength(values.length() - 2);
+
+        sql.append(")").append(values).append(")");
+
+        try (PreparedStatement preparedStatement = connection.prepareStatement(sql.toString())) {
+            int index = 1;
+            for (Field field : fields) {
+                field.setAccessible(true);
+
+                if (field.isAnnotationPresent(Column.class)) {
+                    preparedStatement.setObject(index++, field.get(object));
+                }
+            }
+            preparedStatement.executeUpdate();
+        }
+    }
+    /// END 
 
     /// UPDATING
 
@@ -412,6 +463,10 @@ public class MiDao {
     public void closeConnection() throws Exception {
         if (connection != null)
             connection.close();
+    }
+
+    public void setAutoCommit(boolean t) throws Exception{
+        connection.setAutoCommit(t);
     }
 
 }

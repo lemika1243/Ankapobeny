@@ -57,9 +57,13 @@ public class MiAuto {
      */
     public static double sum(List lo, String met) throws Exception {
         double valiny = 0;
-        Method m = lo.get(0).getClass().getMethod(met);
-        for (int i = 0; i < lo.size(); i++) {
-            valiny += (double) m.invoke(lo.get(i));
+        try {
+            Method m = lo.get(0).getClass().getMethod(met);
+            for (int i = 0; i < lo.size(); i++) {
+                valiny += (double) m.invoke(lo.get(i));
+            }
+        } catch (Exception e) {
+            // TODO: handle exception
         }
         return valiny;
     }

@@ -29,7 +29,7 @@ public class Connect {
         if (dtb.toLowerCase().equals("postgres")) {
             return "jdbc:postgresql://localhost:5432/" + dtbName;
         } else if (dtb.toLowerCase().equals("oracle")) {
-            return "jdbc:oracle:thin:@localhost:1521/orcl";
+            return "jdbc:oracle:thin:@//localhost:1521/orcl";
         } else if (dtb.toLowerCase().equals("mysql")) {
             return "jdbc:mysql://localhost:3306/" + dtbName;
         } else {
