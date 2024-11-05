@@ -469,4 +469,12 @@ public class MiDao {
         connection.setAutoCommit(t);
     }
 
+    public void commit() throws Exception{
+        connection.commit();
+    }
+
+    public void rollback() throws Exception{
+        connection.rollback();
+    }
+
 }
