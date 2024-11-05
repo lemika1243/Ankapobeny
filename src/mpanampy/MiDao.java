@@ -339,8 +339,9 @@ public class MiDao {
                 Foreign foreign = field.getAnnotation(Foreign.class);
                 Object foreignObject = field.get(object);
                 if (foreignObject != null) {
+                    Field primary = MiAuto.getFieldsAnnoted(foreignObject.getClass(), Primary.class).get(0);
                     // Assuming foreign object has a method to get the ID
-                    Method getIdMethod = foreignObject.getClass().getMethod("getId");
+                    Method getIdMethod = foreignObject.getClass().getMethod("get"+MiAuto.toRenisoratra(primary.getName(), 0));
                     Object foreignId = getIdMethod.invoke(foreignObject);
                     sql.append(foreign.name()).append(", ");
                     values.append(foreignId).append(", "); // Directly add foreign ID to values
@@ -384,10 +385,6 @@ public class MiDao {
         if (!condition.equals(""))
             query += " where " + condition;
         stmt.executeUpdate(query);
-        try {
-            connection.commit();
-        } catch (Exception e) {
-        }
     }
 
     public <T> void update(T temporar) throws Exception {
@@ -411,10 +408,6 @@ public class MiDao {
         query += " where " + primary.getAnnotation(Column.class).name() + "="
                 + getParseInsert(get.invoke(temporar)).get(primary.getType());
         stmt.executeUpdate(query);
-        try {
-            connection.commit();
-        } catch (Exception e) {
-        }
     }
     /// END
 
@@ -429,10 +422,6 @@ public class MiDao {
         String query = "delete from " + temp.getSimpleName() + " where " + primary + "="
                 + getParseInsert(get.invoke(temporar)).get(prim.getType()) + "";
         stmt.executeUpdate(query);
-        try {
-            connection.commit();
-        } catch (Exception e) {
-        }
     }
 
     public <T> void delete(List<T> objs) throws Exception {
