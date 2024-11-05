@@ -344,7 +344,7 @@ public class MiDao {
                     Method getIdMethod = foreignObject.getClass().getMethod("get"+MiAuto.toRenisoratra(primary.getName(), 0));
                     Object foreignId = getIdMethod.invoke(foreignObject);
                     sql.append(foreign.name()).append(", ");
-                    values.append(foreignId).append(", "); // Directly add foreign ID to values
+                    values.append("'"+foreignId+"'").append(", "); // Directly add foreign ID to values
                 }
             }
         }
@@ -354,18 +354,18 @@ public class MiDao {
         values.setLength(values.length() - 2);
 
         sql.append(")").append(values).append(")");
+        throw new Exception(sql.toString());
+        // try (PreparedStatement preparedStatement = connection.prepareStatement(sql.toString())) {
+        //     int index = 1;
+        //     for (Field field : fields) {
+        //         field.setAccessible(true);
 
-        try (PreparedStatement preparedStatement = connection.prepareStatement(sql.toString())) {
-            int index = 1;
-            for (Field field : fields) {
-                field.setAccessible(true);
-
-                if (field.isAnnotationPresent(Column.class)) {
-                    preparedStatement.setObject(index++, field.get(object));
-                }
-            }
-            preparedStatement.executeUpdate();
-        }
+        //         if (field.isAnnotationPresent(Column.class)) {
+        //             preparedStatement.setObject(index++, field.get(object));
+        //         }
+        //     }
+        //     preparedStatement.executeUpdate();
+        // }
     }
     /// END 
 
