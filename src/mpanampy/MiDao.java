@@ -98,6 +98,8 @@ public class MiDao {
             return res.getTimestamp(col);
         } else if (value.getName().equals(LocalDate.class.getName())) {
             return LocalDate.parse(res.getString(col));
+        } else if (value.getName().equals(java.sql.Date.class.getName())) {
+            return res.getDate(col);
         }
         throw new Exception("we do not have a parsing for " + value);
     }
