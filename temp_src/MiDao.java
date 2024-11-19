@@ -30,6 +30,10 @@ public class MiDao {
         }
     }
 
+    public MiDao(Connection connection) throws Exception {
+        this.connection = connection;
+    }
+
     <T> T setFieldColumn(ResultSet res, Class<T> temp) throws Exception {
         List<Field> fields = MiAuto.getFieldsAnnoted(temp, Column.class);
         T temporar = temp.newInstance();
@@ -318,7 +322,7 @@ public class MiDao {
         return valiny;
     }
     /// END
-    
+
     /// INSERT
     public <T> void insert(T object) throws Exception {
         Class<?> clazz = object.getClass();
@@ -343,10 +347,11 @@ public class MiDao {
                 if (foreignObject != null) {
                     Field primary = MiAuto.getFieldsAnnoted(foreignObject.getClass(), Primary.class).get(0);
                     // Assuming foreign object has a method to get the ID
-                    Method getIdMethod = foreignObject.getClass().getMethod("get"+MiAuto.toRenisoratra(primary.getName(), 0));
+                    Method getIdMethod = foreignObject.getClass()
+                            .getMethod("get" + MiAuto.toRenisoratra(primary.getName(), 0));
                     Object foreignId = getIdMethod.invoke(foreignObject);
                     sql.append(foreign.name()).append(", ");
-                    values.append("'"+foreignId+"'").append(", "); // Directly add foreign ID to values
+                    values.append("'" + foreignId + "'").append(", "); // Directly add foreign ID to values
                 }
             }
         }
@@ -368,7 +373,7 @@ public class MiDao {
             preparedStatement.executeUpdate();
         }
     }
-    /// END 
+    /// END
 
     /// UPDATING
 
@@ -409,6 +414,12 @@ public class MiDao {
         query += " where " + primary.getAnnotation(Column.class).name() + "="
                 + getParseInsert(get.invoke(temporar)).get(primary.getType());
         stmt.executeUpdate(query);
+    }
+
+    public void executeUpdate(String query) throws Exception {
+        Statement stm = connection.createStatement();
+        stm.executeUpdate(query);
+        stm.close();
     }
     /// END
 
@@ -455,15 +466,15 @@ public class MiDao {
             connection.close();
     }
 
-    public void setAutoCommit(boolean t) throws Exception{
+    public void setAutoCommit(boolean t) throws Exception {
         connection.setAutoCommit(t);
     }
 
-    public void commit() throws Exception{
+    public void commit() throws Exception {
         connection.commit();
     }
 
-    public void rollback() throws Exception{
+    public void rollback() throws Exception {
         connection.rollback();
     }
 
