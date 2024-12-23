@@ -246,9 +246,11 @@ public class MiAuto {
         String valiny = "";
         valiny = "<!DOCTYPE html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'><title>"
                 + title + "</title>";
+        // if(style != null) valiny+="<style>";
         for (String val : style) {
             valiny += "<link rel='stylesheet' href='" + val + "'>\n";
         }
+        // if(style != null) valiny+="</style>";
         valiny += "</head><body>";
         return valiny;
     }

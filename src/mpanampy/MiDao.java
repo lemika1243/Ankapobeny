@@ -15,7 +15,7 @@ import connection.*;
 
 public class MiDao {
 
-    public Connection connection;
+    Connection connection;
 
     /**
      * 
@@ -31,6 +31,14 @@ public class MiDao {
     }
 
     public MiDao(Connection connection) throws Exception {
+        this.connection = connection;
+    }
+
+    public Connection getConnection() {
+        return connection;
+    }
+
+    public void setConnection(Connection connection) {
         this.connection = connection;
     }
 
@@ -233,16 +241,25 @@ public class MiDao {
     }
 
     public <T, K> T getById(K id, Class<T> temp) throws Exception {
-        Statement stmt = connection.createStatement();
+        // Get the primary key field annotated with @Primary
         Field primary = MiAuto.getFieldsAnnoted(temp, Primary.class).get(0);
-        String query = "select * from " + temp.getSimpleName().toLowerCase() + " where "
-                + primary.getAnnotation(Column.class).name() + "='" + id + "'";
-        ResultSet res = stmt.executeQuery(query);
-        while (res.next()) {
+    
+        // Construct the SQL query using placeholders
+        String query = "SELECT * FROM " + temp.getSimpleName().toLowerCase() + 
+                       " WHERE " + primary.getAnnotation(Column.class).name() + " = ?";
+    
+        // Prepare the statement and set the parameter
+        PreparedStatement pstmt = connection.prepareStatement(query);
+        pstmt.setObject(1, id);
+    
+        // Execute the query and fetch the result
+        ResultSet res = pstmt.executeQuery();
+        if (res.next()) {
             return setFieldColumn(res, temp);
         }
         return null;
     }
+    
 
     /**
      * returns all the object in the database that correspond to the condition and
@@ -259,21 +276,36 @@ public class MiDao {
      * @return the list of the object associated to the base
      * @throws Exception
      */
-    public <T> List<T> find(Class<T> temp, String condition) throws Exception {
-        if (condition == null || condition.equals(""))
-            throw new Exception("Must have a condition");
-        List<T> valiny = new ArrayList<T>();
-        Statement stmt = connection.createStatement();
-        String query = "select * from " + temp.getSimpleName().toLowerCase() + " where " + condition;
-        ResultSet res = stmt.executeQuery(query);
+    public <T> List<T> find(Class<T> temp, List<Condition> conditions) throws Exception {
+        if (conditions == null || conditions.isEmpty()) {
+            throw new Exception("Must have at least one condition");
+        }
+    
+        List<T> valiny = new ArrayList<>();
+    
+        // Build the condition string with placeholders
+        String conditionString = Condition.buildConditionString(conditions);
+        String query = "SELECT * FROM " + temp.getSimpleName().toLowerCase() + " WHERE " + conditionString;
+    
+        PreparedStatement pstmt = connection.prepareStatement(query);
+    
+        // Set the parameters in the PreparedStatement
+        for (int i = 0; i < conditions.size(); i++) {
+            pstmt.setObject(i + 1, conditions.get(i).getValue());
+        }
+    
+        ResultSet res = pstmt.executeQuery();
         List<Field> fields = MiAuto.getFieldsAnnoted(temp, Column.class);
         T temporar = temp.newInstance();
+    
         while (res.next()) {
             temporar = setFieldColumn(res, temp);
             valiny.add(temporar);
         }
+    
         return valiny;
     }
+    
 
     /**
      * @return all the possibilities values in condition of T(The object to verify)
