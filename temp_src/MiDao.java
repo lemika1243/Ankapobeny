@@ -234,6 +234,8 @@ public class MiDao {
                 setForeignFieldColumn(res, temporar);
                 valiny.add(temporar);
             }
+            stmt.close();
+            res.close();
         } else {
             valiny = objects.subList(begin, begin + max);
         }
@@ -257,6 +259,8 @@ public class MiDao {
         if (res.next()) {
             return setFieldColumn(res, temp);
         }
+        pstmt.close();
+        res.close();
         return null;
     }
     
@@ -302,7 +306,8 @@ public class MiDao {
             temporar = setFieldColumn(res, temp);
             valiny.add(temporar);
         }
-    
+        pstmt.close();
+        res.close();
         return valiny;
     }
     
@@ -424,6 +429,56 @@ public class MiDao {
             query += " where " + condition;
         stmt.executeUpdate(query);
     }
+
+    public <T> void update(T temporar, List<Condition> conditions) throws Exception {
+        if (conditions == null || conditions.isEmpty()) {
+            throw new Exception("Must have at least one condition");
+        }
+    
+        Class<?> temp = temporar.getClass();
+        Field[] fields = temp.getDeclaredFields();
+    
+        // Build the SQL query dynamically
+        StringBuilder query = new StringBuilder("UPDATE " + temp.getSimpleName().toLowerCase() + " SET ");
+        List<Object> values = new ArrayList<>();
+    
+        for (int i = 0; i < fields.length; i++) {
+            Field field = fields[i];
+            field.setAccessible(true); // Allow access to private fields
+    
+            Object value = field.get(temporar);
+            if (value != null) { // Only update non-null fields
+                if (i > 0) {
+                    query.append(", ");
+                }
+                query.append(field.getAnnotation(Column.class).name()).append(" = ?");
+                values.add(value);
+            }
+        }
+    
+        // Append the WHERE clause
+        String conditionString = Condition.buildConditionString(conditions);
+        query.append(" WHERE ").append(conditionString);
+    
+        // Prepare the statement
+        PreparedStatement pstmt = connection.prepareStatement(query.toString());
+    
+        // Set the values for the SET clause
+        int paramIndex = 1;
+        for (Object value : values) {
+            pstmt.setObject(paramIndex++, value);
+        }
+    
+        // Set the values for the WHERE clause
+        for (Condition condition : conditions) {
+            pstmt.setObject(paramIndex++, condition.getValue());
+        }
+    
+        // Execute the update
+        pstmt.executeUpdate();
+        pstmt.close();
+    }
+    
 
     public <T> void update(T temporar) throws Exception {
         Class temp = temporar.getClass();
