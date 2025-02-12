@@ -6,7 +6,6 @@ set -o errexit
 src="src"
 lib="lib"
 bin="bin"
-libname="station-perso"
 temp_src="temp_src"
 
 # Create a temporary source directory
@@ -25,7 +24,7 @@ javac -cp "../$lib/*" -g:vars -d "../$bin" "../$temp_src"/*.java
 cd "../$bin" || exit
 
 # Create the JAR file
-jar cvf "../ankapobeny.jar" *
+jar cvf "../MIDao.jar" *
 
 # Go back to the original directory
 cd ..
