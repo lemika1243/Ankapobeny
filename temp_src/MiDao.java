@@ -361,7 +361,7 @@ public class MiDao {
     /// END
 
     /// INSERT
-    public <T> void insert(T object) throws Exception {
+    public <T> void insert(T object, boolean isIdGenerated) throws Exception {
         Class<?> clazz = object.getClass();
         StringBuilder sql = new StringBuilder("INSERT INTO " + clazz.getSimpleName() + " (");
         StringBuilder values = new StringBuilder(" VALUES (");
@@ -372,9 +372,16 @@ public class MiDao {
 
             // Check for @Column annotation
             if (field.isAnnotationPresent(Column.class)) {
-                Column column = field.getAnnotation(Column.class);
-                sql.append(column.name()).append(", ");
-                values.append("?, "); // Placeholder for PreparedStatement
+                if(isIdGenerated && !field.isAnnotationPresent(Primary.class)){
+                    Column column = field.getAnnotation(Column.class);
+                    sql.append(column.name()).append(", ");
+                    values.append("?, ");
+                }
+                else if(!isIdGenerated){
+                    Column column = field.getAnnotation(Column.class);
+                    sql.append(column.name()).append(", ");
+                    values.append("?, ");
+                }
             }
 
             // Check for @Foreign annotation
