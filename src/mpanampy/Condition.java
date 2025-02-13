@@ -6,6 +6,22 @@ public class Condition {
     String comparaison = "=", operation = "and";
     String key;
     Object value;
+    public Condition() {}
+    public Condition(String key, String comparaison, Object value, String operation) {
+        this.comparaison = comparaison;
+        this.operation = operation;
+        this.key = key;
+        this.value = value;
+    }
+    public Condition(String key, String comparaison, Object value) {
+        this.comparaison = comparaison;
+        this.key = key;
+        this.value = value;
+    }
+    public Condition(String key, Object value) {
+        this.key = key;
+        this.value = value;
+    }
     public String getComparaison() {
         return comparaison;
     }
