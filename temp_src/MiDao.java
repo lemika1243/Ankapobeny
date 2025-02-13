@@ -8,9 +8,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import javax.swing.text.html.parser.Entity;
+
 import annotation.Column;
 import annotation.Foreign;
 import annotation.Primary;
+import annotation.Relation;
 import connection.*;
 
 public class MiDao {
@@ -223,10 +226,14 @@ public class MiDao {
     }
 
     public <T> List<T> getAll(Class<T> temp, List<T> objects, int begin, int max) throws Exception {
+        String tableName = temp.getSimpleName();
+        if(temp.isAnnotationPresent(Relation.class)){
+            tableName = temp.getAnnotation(Relation.class).name();
+        }
         List<T> valiny = new ArrayList<T>();
         if (objects == null) {
             Statement stmt = connection.createStatement();
-            String query = "select * from " + temp.getSimpleName().toLowerCase();
+            String query = "select * from " + tableName;
             ResultSet res = stmt.executeQuery(query);
             T temporar = temp.newInstance();
             while (res.next()) {
@@ -243,11 +250,15 @@ public class MiDao {
     }
 
     public <T, K> T getById(K id, Class<T> temp) throws Exception {
+        String tableName = temp.getSimpleName();
+        if(temp.isAnnotationPresent(Relation.class)){
+            tableName = temp.getAnnotation(Relation.class).name();
+        }
         // Get the primary key field annotated with @Primary
         Field primary = MiAuto.getFieldsAnnoted(temp, Primary.class).get(0);
     
         // Construct the SQL query using placeholders
-        String query = "SELECT * FROM " + temp.getSimpleName().toLowerCase() + 
+        String query = "SELECT * FROM " + tableName + 
                        " WHERE " + primary.getAnnotation(Column.class).name() + " = ?";
     
         // Prepare the statement and set the parameter
@@ -281,6 +292,10 @@ public class MiDao {
      * @throws Exception
      */
     public <T> List<T> find(Class<T> temp, List<Condition> conditions) throws Exception {
+        String tableName = temp.getSimpleName();
+        if(temp.isAnnotationPresent(Relation.class)){
+            tableName = temp.getAnnotation(Relation.class).name();
+        }
         if (conditions == null || conditions.isEmpty()) {
             throw new Exception("Must have at least one condition");
         }
@@ -289,7 +304,7 @@ public class MiDao {
     
         // Build the condition string with placeholders
         String conditionString = Condition.buildConditionString(conditions);
-        String query = "SELECT * FROM " + temp.getSimpleName().toLowerCase() + " WHERE " + conditionString;
+        String query = "SELECT * FROM " + tableName + " WHERE " + conditionString;
     
         PreparedStatement pstmt = connection.prepareStatement(query);
     
@@ -330,7 +345,11 @@ public class MiDao {
         }
         if (!temp.equals(""))
             conditions += " where" + temp;
-        String query = "select * from " + clazz.getSimpleName().toLowerCase() + conditions;
+        String tableName = clazz.getSimpleName();
+        if(clazz.isAnnotationPresent(Relation.class)){
+            tableName = clazz.getAnnotation(Relation.class).name();
+        }
+        String query = "select * from " + tableName + conditions;
         ResultSet res = stmt.executeQuery(query);
         T mety = (T) clazz.newInstance();
         while (res.next()) {
@@ -363,7 +382,11 @@ public class MiDao {
     /// INSERT
     public <T> void insert(T object, boolean isIdGenerated) throws Exception {
         Class<?> clazz = object.getClass();
-        StringBuilder sql = new StringBuilder("INSERT INTO " + clazz.getSimpleName() + " (");
+        String tableName = clazz.getSimpleName();
+        if(clazz.isAnnotationPresent(Relation.class)){
+            tableName = clazz.getAnnotation(Relation.class).name();
+        }
+        StringBuilder sql = new StringBuilder("INSERT INTO " + tableName + " (");
         StringBuilder values = new StringBuilder(" VALUES (");
 
         Field[] fields = clazz.getDeclaredFields();
