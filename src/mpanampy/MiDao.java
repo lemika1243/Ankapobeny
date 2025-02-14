@@ -1,5 +1,10 @@
 package mpanampy;
 
+import annotation.Column;
+import annotation.Foreign;
+import annotation.Primary;
+import annotation.Relation;
+import connection.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.sql.*;
@@ -8,13 +13,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import javax.swing.text.html.parser.Entity;
 
-import annotation.Column;
-import annotation.Foreign;
-import annotation.Primary;
-import annotation.Relation;
-import connection.*;
 
 public class MiDao {
 
@@ -410,16 +409,8 @@ public class MiDao {
             // Check for @Foreign annotation
             if (field.isAnnotationPresent(Foreign.class)) {
                 Foreign foreign = field.getAnnotation(Foreign.class);
-                Object foreignObject = field.get(object);
-                if (foreignObject != null) {
-                    Field primary = MiAuto.getFieldsAnnoted(foreignObject.getClass(), Primary.class).get(0);
-                    // Assuming foreign object has a method to get the ID
-                    Method getIdMethod = foreignObject.getClass()
-                            .getMethod("get" + MiAuto.toRenisoratra(primary.getName(), 0));
-                    Object foreignId = getIdMethod.invoke(foreignObject);
-                    sql.append(foreign.name()).append(", ");
-                    values.append("'" + foreignId + "'").append(", "); // Directly add foreign ID to values
-                }
+                sql.append(foreign.name()).append(", ");
+                values.append("?, ");
             }
         }
 
@@ -428,6 +419,7 @@ public class MiDao {
         values.setLength(values.length() - 2);
 
         sql.append(")").append(values).append(")");
+        // throw new Exception(sql.toString());
         try (PreparedStatement preparedStatement = connection.prepareStatement(sql.toString())) {
             int index = 1;
             for (Field field : fields) {
@@ -436,6 +428,23 @@ public class MiDao {
                 if (field.isAnnotationPresent(Column.class)) {
                     preparedStatement.setObject(index++, field.get(object));
                 }
+                if (field.isAnnotationPresent(Foreign.class)) {
+                    Object foreignObject = field.get(object);
+                    if (foreignObject != null) {
+                        List<Field> primaryFields = MiAuto.getFieldsAnnoted(foreignObject.getClass(), Primary.class);
+                        if (primaryFields.isEmpty()) {
+                            throw new Exception("No primary key found in class: " + foreignObject.getClass().getSimpleName());
+                        }
+                        Field primary = primaryFields.get(0);
+                        Method getIdMethod = foreignObject.getClass()
+                                .getMethod("get" + MiAuto.toRenisoratra(primary.getName(), 0));
+                        Object foreignId = getIdMethod.invoke(foreignObject);
+                        preparedStatement.setObject(index++, foreignId);
+                    } else {
+                        preparedStatement.setNull(index++, Types.INTEGER); // or another appropriate type
+                    }
+                }
+                
             }
             preparedStatement.executeUpdate();
         }
