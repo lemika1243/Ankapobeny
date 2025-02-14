@@ -511,27 +511,99 @@ public class MiDao {
     
 
     public <T> void update(T temporar) throws Exception {
-        Class temp = temporar.getClass();
-        Statement stmt = connection.createStatement();
-        String query = "update " + temp.getSimpleName() + " set ";
-        Field[] fields = temporar.getClass().getDeclaredFields();
-        String column = new String(), foreign = new String();
-        Method get;
-        Object fk;
-        Field primary;
-        for (int i = 0; i < fields.length; i++) {
-            Field field = fields[i];
-            query += getQuery(temporar, field, false);
-            if (i < fields.length - 1)
-                query += ",";
+        Class<?> clazz = temporar.getClass();
+        
+        // Retrieve primary key field (assuming at least one exists)
+        List<Field> primaries = MiAuto.getFieldsAnnoted(clazz, Primary.class);
+        if (primaries.isEmpty()) {
+            throw new Exception("No primary key defined for class " + clazz.getSimpleName());
         }
-        List<Field> primaries = MiAuto.getFieldsAnnoted(temp, Primary.class);
-        primary = primaries.get(0);
-        get = temp.getMethod("get" + MiAuto.toRenisoratra(primary.getName(), 0));
-        query += " where " + primary.getAnnotation(Column.class).name() + "="
-                + getParseInsert(get.invoke(temporar)).get(primary.getType());
-        stmt.executeUpdate(query);
+        Field primaryField = primaries.get(0);
+        primaryField.setAccessible(true);
+        Object primaryValue = primaryField.get(temporar);
+        // If the primary value is a custom object, try to get its id
+        if (!(primaryValue instanceof String) && !(primaryValue instanceof Number) && !(primaryValue instanceof Date)) {
+            try {
+                Method getId = primaryValue.getClass().getMethod("getId");
+                primaryValue = getId.invoke(primaryValue);
+            } catch (Exception e) {
+                // leave primaryValue as is if getId not available
+            }
+        }
+        
+        // Start building the SQL update query
+        StringBuilder query = new StringBuilder();
+        query.append("UPDATE ").append(clazz.getSimpleName()).append(" SET ");
+        
+        // List to store the parameters for the PreparedStatement
+        List<Object> parameters = new ArrayList<>();
+        Field[] fields = clazz.getDeclaredFields();
+        boolean first = true;
+        
+        for (Field field : fields) {
+            field.setAccessible(true);
+            // Skip the primary key field
+            if (field.equals(primaryField)) {
+                continue;
+            }
+            Object value = field.get(temporar);
+            // If value is null or is a Collection, skip this field
+            if (value == null || (value instanceof java.util.Collection)) {
+                continue;
+            }
+            
+            // If value is a custom object (not common types), try to get its id
+            if (!(value instanceof String) && !(value instanceof Number) && !(value instanceof Date)) {
+                try {
+                    Method getId = value.getClass().getMethod("getId");
+                    value = getId.invoke(value);
+                } catch (Exception e) {
+                    // Fallback: keep original value
+                }
+            }
+            
+            // Determine the column name (use annotation if available)
+            String columnName = field.getName();
+            if (field.isAnnotationPresent(Column.class)) {
+                Column col = field.getAnnotation(Column.class);
+                columnName = col.name();
+            }
+            else if (field.isAnnotationPresent(Foreign.class)) {
+                Foreign col = field.getAnnotation(Foreign.class);
+                columnName = col.name();
+            }
+            
+            // Append comma if not the first field added
+            if (!first) {
+                query.append(", ");
+            }
+            first = false;
+            query.append(columnName).append(" = ?");
+            parameters.add(value);
+        }
+        
+        if (parameters.isEmpty()) {
+            throw new Exception("No fields to update for " + clazz.getSimpleName());
+        }
+        
+        // Determine primary column name
+        String primaryColumn = primaryField.getName();
+        if (primaryField.isAnnotationPresent(Column.class)) {
+            primaryColumn = primaryField.getAnnotation(Column.class).name();
+        }
+        query.append(" WHERE ").append(primaryColumn).append(" = ?");
+        parameters.add(primaryValue);
+        
+        // Create the PreparedStatement and set all parameter values
+        PreparedStatement ps = connection.prepareStatement(query.toString());
+        for (int i = 0; i < parameters.size(); i++) {
+            ps.setObject(i + 1, parameters.get(i));
+        }
+        
+        ps.executeUpdate();
+        ps.close();
     }
+    
 
     public void executeUpdate(String query) throws Exception {
         Statement stm = connection.createStatement();
@@ -572,6 +644,15 @@ public class MiDao {
         Statement stmt = connection.createStatement();
         HashMap<String, String> map = getDbSequenceMethod(sequenceName);
         ResultSet res = stmt.executeQuery("select " + map.get(Connect.getDbType()));
+        if (res.next())
+            valiny = res.getString("nextval");
+        return valiny;
+    }
+    public String nextVal(String sequenceName, String dbType) throws Exception {
+        String valiny = new String();
+        Statement stmt = connection.createStatement();
+        HashMap<String, String> map = getDbSequenceMethod(sequenceName);
+        ResultSet res = stmt.executeQuery("select " + map.get(dbType));
         if (res.next())
             valiny = res.getString("nextval");
         return valiny;
