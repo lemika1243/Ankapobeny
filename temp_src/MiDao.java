@@ -64,7 +64,11 @@ public class MiDao {
             id = res.getString(field.getAnnotation(Foreign.class).name());
             Method set = temporar.getClass().getMethod("set" + MiAuto.toRenisoratra(field.getName(), 0),
                     field.getType());
-            set.invoke(temporar, getById(id, field.getType()));
+            try {
+                set.invoke(temporar, getById(Integer.parseInt(id), field.getType()));
+            } catch (Exception e) {
+                set.invoke(temporar, getById(id, field.getType()));
+            }
         }
     }
 
