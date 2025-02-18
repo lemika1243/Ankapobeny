@@ -525,7 +525,10 @@ public class MiDao {
 
     public <T> void update(T temporar) throws Exception {
         Class<?> clazz = temporar.getClass();
-        
+        String tableName = clazz.getSimpleName();
+        if(clazz.isAnnotationPresent(Relation.class)){
+            tableName = clazz.getAnnotation(Relation.class).name();
+        }        
         // Retrieve primary key field (assuming at least one exists)
         List<Field> primaries = MiAuto.getFieldsAnnoted(clazz, Primary.class);
         if (primaries.isEmpty()) {
@@ -546,7 +549,7 @@ public class MiDao {
         
         // Start building the SQL update query
         StringBuilder query = new StringBuilder();
-        query.append("UPDATE ").append(clazz.getSimpleName()).append(" SET ");
+        query.append("UPDATE ").append(tableName).append(" SET ");
         
         // List to store the parameters for the PreparedStatement
         List<Object> parameters = new ArrayList<>();
