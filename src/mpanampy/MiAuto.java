@@ -2,6 +2,10 @@ package mpanampy;
 
 import java.io.*;
 import java.lang.reflect.*;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.sql.ResultSet;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
@@ -741,6 +745,28 @@ public class MiAuto {
     
 
     /// CONCERNING NETWORKING
+    /// 
+    public static List<String> getServerIPAddresses() throws SocketException {
+        List<String> result = new ArrayList<>();
+        Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+
+        while (interfaces.hasMoreElements()) {
+            NetworkInterface ni = interfaces.nextElement();
+            if (!ni.isUp() || ni.isLoopback() || ni.isVirtual()) continue;
+
+            Enumeration<InetAddress> addrs = ni.getInetAddresses();
+            while (addrs.hasMoreElements()) {
+                InetAddress addr = addrs.nextElement();
+                if (addr instanceof Inet4Address && !addr.isLoopbackAddress()) {
+                    // Format with tab before interface name and tab before IP
+                    String entry = "\t" + ni.getName() + "\t" + addr.getHostAddress();
+                    result.add(entry);
+                }
+            }
+        }
+
+        return result;
+    }
 
     public static void writeObjects(ObjectOutputStream var0, Object... var1) throws Exception {
         Object[] var2 = var1;
@@ -754,6 +780,71 @@ public class MiAuto {
         }
 
         System.out.println("VITA !!!!!\n\n");
+    }
+
+
+    /**
+     * Reads the given input file in chunks and writes directly to the provided OutputStream.
+     * This never builds a single large byte[] in memory, so it can handle arbitrarily large files.
+     *
+     * @param out         the OutputStream to write into (e.g. FileOutputStream, socket, etc.)
+     * @param chunkSize   size of each read-buffer in bytes (e.g. 81920 for ~80 KiB)
+     * @throws IOException if an I/O error occurs
+     */
+    public static void writeFile(File inputFile, OutputStream out, int chunkSize) throws IOException {
+        long totalBytes = inputFile.length();
+        long bytesSent = 0L;
+    
+        try (FileInputStream fis = new FileInputStream(inputFile);
+             BufferedInputStream bis = new BufferedInputStream(fis)) 
+        {
+            byte[] buffer = new byte[chunkSize];
+            int bytesRead;
+            while ((bytesRead = bis.read(buffer)) != -1) {
+                out.write(buffer, 0, bytesRead);
+                bytesSent += bytesRead;
+    
+                // Calculate and print progress percentage
+                int progress = (int)((bytesSent * 100) / totalBytes);
+                System.out.printf("\rSending '%s': %d%%", inputFile.getName(), progress);
+            }
+            out.flush();
+        }
+        System.out.println("\rSending '" + inputFile.getName() + "': 100%"); // ensure it ends at 100%
+    }
+
+
+    public static void writeFiles(List<String> filePaths, List<String> fileNames,
+                                  OutputStream rawOut,
+                                  int chunkSize) throws IOException
+    {
+        DataOutputStream dos = new DataOutputStream(rawOut);
+
+        // 1) Tell the receiver how many files to expect
+        dos.writeInt(filePaths.size());
+        dos.flush();
+
+        for (int i = 0; i < filePaths.size(); i++) {
+            String path = filePaths.get(i);
+            String fileName = fileNames.get(i);
+            File f = new File(path);
+            if (!f.exists() || !f.isFile()) {
+                throw new FileNotFoundException("Cannot find file: " + path);
+            }
+
+            // 2a) Send the file's relative path/name
+            dos.writeUTF(fileName);
+
+            // 2b) Send its length in bytes
+            long length = f.length();
+            dos.writeLong(length);
+            dos.flush();
+
+            // 2c) Stream the file contents
+            writeFile(f, dos, chunkSize);
+            dos.flush();
+        }
+        // Do NOT close 'dos' here if the socket is reused afterward.
     }
 
     /// END
