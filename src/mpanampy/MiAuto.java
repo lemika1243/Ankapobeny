@@ -9,6 +9,7 @@ import java.util.*;
 import javax.swing.*;
 
 import annotation.Column;
+import java.awt.Component;
 
 public class MiAuto {
     Object object;
@@ -442,6 +443,29 @@ public class MiAuto {
     /// END
 
     /// CONCERNING THE GENERALISATION IN GENERAL
+    public static List<String> getLastsByElement(List<String> var0, String var1) {
+        ArrayList var2 = new ArrayList();
+
+        try {
+        Iterator var3 = var0.iterator();
+
+        while(var3.hasNext()) {
+            String var8 = (String)var3.next();
+            String[] var5 = var8.split(var1);
+            String var6 = var1 + var5[1];
+            var2.add(var6);
+        }
+        } catch (Exception var7) {
+        String[] var4 = ((String)var0.get(0)).split("/");
+        if (var4.length == 1) {
+            var4 = ((String)var0.get(0)).split("\\\\");
+        }
+
+        var2.add(var4[var4.length - 1]);
+        }
+
+        return var2;
+    }
 
     public static List<String> getIn(ArrayList<String> container, String value) {
         List<String> valiny = new ArrayList<>();
@@ -609,6 +633,10 @@ public class MiAuto {
     /// END
 
     /// CONCERNING PANELS
+    /// 
+    public static void showMessage(String var0) {
+        JOptionPane.showMessageDialog((Component)null, var0);
+    }
 
     /**
      * GENERATES A PANEL FORM FROM this object
@@ -709,6 +737,25 @@ public class MiAuto {
         }
         return valiny;
     }
+    /// END
+    
+
+    /// CONCERNING NETWORKING
+
+    public static void writeObjects(ObjectOutputStream var0, Object... var1) throws Exception {
+        Object[] var2 = var1;
+        int var3 = var1.length;
+
+        for(int var4 = 0; var4 < var3; ++var4) {
+        Object var5 = var2[var4];
+        var0.writeObject(var5);
+        var0.flush();
+        Thread.sleep(250L);
+        }
+
+        System.out.println("VITA !!!!!\n\n");
+    }
+
     /// END
 
 }
